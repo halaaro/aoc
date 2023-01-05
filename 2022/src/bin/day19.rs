@@ -1,5 +1,9 @@
 #![allow(unused)]
-use std::{cmp::max, str::FromStr, io::{Write, stdout}};
+use std::{
+    cmp::max,
+    io::{stdout, Write},
+    str::FromStr,
+};
 
 fn main() {
     let input = include_str!("../../data/day19.input");
