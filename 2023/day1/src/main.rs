@@ -21,47 +21,47 @@ fn part1(input: &str) -> u32 {
 }
 
 fn part2(input: &str) -> u32 {
-    let digits = b"one,two,three,four,five,six,seven,eight,nine"
-        .split(|bi| *bi == b',')
+    let digits = "one,two,three,four,five,six,seven,eight,nine"
+        .split(',')
         .collect::<Vec<_>>();
     // println!("{:?}", &digits);
 
     let line_digits = input
         .lines()
         .map(|line| {
-            let b = line.as_bytes();
-            // println!("{}", line);
             (
-                b.iter()
+                line.chars()
                     .enumerate()
-                    .find_map(|(i, bi)| {
-                        if *bi >= b'1' && *bi <= b'9' {
-                            return Some(bi - b'0');
-                        }
-                        digits
-                            .iter()
-                            .enumerate()
-                            .find(|(_, dj)| b.len() - i >= dj.len() && b[i..i + dj.len()] == ***dj)
-                            .map(|(j, _)| (j + 1) as u8)
+                    .find_map(|(i, ci)| {
+                        ci.to_digit(10).or_else(|| {
+                            digits
+                                .iter()
+                                .enumerate()
+                                .find(|(_, dj)| {
+                                    line.len() - i >= dj.len() && line[i..i + dj.len()].eq(**dj)
+                                })
+                                .map(|(j, _)| (j + 1) as u32)
+                        })
                     })
                     .unwrap(),
-                b.iter()
+                line.bytes()
                     .enumerate()
                     .rev()
                     .find_map(|(i, bi)| {
-                        if *bi >= b'1' && *bi <= b'9' {
-                            return Some(bi - b'0');
-                        }
-                        digits
-                            .iter()
-                            .enumerate()
-                            .find(|(_, dj)| b.len() - i >= dj.len() && b[i..i + dj.len()] == ***dj)
-                            .map(|(j, _)| (j + 1) as u8)
+                        char::from_u32(bi as u32).unwrap().to_digit(10).or_else(|| {
+                            digits
+                                .iter()
+                                .enumerate()
+                                .find(|(_, dj)| {
+                                    line.len() - i >= dj.len() && line[i..i + dj.len()].eq(**dj)
+                                })
+                                .map(|(j, _)| (j + 1) as u32)
+                        })
                     })
                     .unwrap(),
             )
         })
-        .map(|d| (d.0 as u32) * 10 + d.1 as u32);
+        .map(|d| d.0 * 10 + d.1);
 
     // println!("{:?}", line_digits.collect::<Vec<_>>());
     line_digits.sum::<u32>()
