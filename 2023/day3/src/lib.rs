@@ -1,8 +1,5 @@
 use std::{
-    collections::{
-        hash_map::{Entry, RandomState},
-        HashMap,
-    },
+    collections::{hash_map::RandomState, HashMap},
     hash::BuildHasher,
 };
 
@@ -12,7 +9,7 @@ pub trait GroupCollect<S = RandomState> {
 
     fn group_collect<
         TO: FromIterator<(Self::TKey, TI)>,
-        TI: FromIterator<Self::TValue> + Extend<Self::TValue>,
+        TI: Default + Extend<Self::TValue>,
     >(
         self,
     ) -> TO;
@@ -27,7 +24,7 @@ where
 
     fn group_collect<
         TO: FromIterator<(Self::TKey, TI)>,
-        TI: FromIterator<Self::TValue> + Extend<Self::TValue>,
+        TI: Default + Extend<Self::TValue>,
     >(
         self,
     ) -> TO {
@@ -40,7 +37,7 @@ pub trait GroupCollectWithHasher<S> {
     type TValue;
     fn group_collect_with_hasher<
         TO: FromIterator<(Self::TKey, TI)>,
-        TI: FromIterator<Self::TValue> + Extend<Self::TValue>,
+        TI: Default + Extend<Self::TValue>,
     >(
         self,
         hasher: S,
@@ -57,7 +54,7 @@ where
 
     fn group_collect_with_hasher<
         TO: FromIterator<(Self::TKey, TI)>,
-        TI: FromIterator<Self::TValue> + Extend<Self::TValue>,
+        TI: Default + Extend<Self::TValue>,
     >(
         self,
         hasher: S,
@@ -66,15 +63,11 @@ where
         let mut values: Vec<(K, TI)> = Vec::new();
 
         for (key, val) in self {
-            match map.entry(key.clone()) {
-                Entry::Occupied(e) => {
-                    values[*e.get()].1.extend([val]);
-                }
-                Entry::Vacant(e) => {
-                    e.insert(values.len());
-                    values.push((key, TI::from_iter([val])));
-                }
+            let idx = *map.entry(key.clone()).or_insert(values.len());
+            if idx == values.len() {
+                values.push((key, Default::default()))
             };
+            values[idx].1.extend([val]);
         }
         TO::from_iter(values)
     }
@@ -86,7 +79,7 @@ pub trait GroupCollectBy<F, S = RandomState> {
 
     fn group_collect_by<
         TO: FromIterator<(Self::TKey, TI)>,
-        TI: FromIterator<Self::TValue> + Extend<Self::TValue>,
+        TI: Default + Extend<Self::TValue>,
     >(
         self,
         f: F,
@@ -104,7 +97,7 @@ where
 
     fn group_collect_by<
         TO: FromIterator<(Self::TKey, TI)>,
-        TI: FromIterator<Self::TValue> + Extend<Self::TValue>,
+        TI: Default + Extend<Self::TValue>,
     >(
         self,
         f: F,
@@ -119,7 +112,7 @@ pub trait GroupCollectByWithHasher<F, S> {
 
     fn group_collect_by_with_hasher<
         TO: FromIterator<(Self::TKey, TI)>,
-        TI: FromIterator<Self::TValue> + Extend<Self::TValue>,
+        TI: Default + Extend<Self::TValue>,
     >(
         self,
         f: F,
@@ -139,7 +132,7 @@ where
 
     fn group_collect_by_with_hasher<
         TO: FromIterator<(Self::TKey, TI)>,
-        TI: FromIterator<Self::TValue> + Extend<Self::TValue>,
+        TI: Default + Extend<Self::TValue>,
     >(
         self,
         f: F,
@@ -210,10 +203,9 @@ mod tests {
 
     #[test]
     fn test_group_collect_by_with_hasher() {
-        let hasher = RandomState::new();
         let grps: HashMap<_, Vec<_>> = [0, 1, 2, 3]
             .into_iter()
-            .group_collect_by_with_hasher(|i| i % 3, hasher);
+            .group_collect_by_with_hasher(|i| i % 3, RandomState::new());
 
         assert_eq!(grps[&0], vec![0, 3]);
         assert_eq!(grps[&1], vec![1]);
