@@ -1,8 +1,9 @@
 #![allow(dead_code)]
 
-use itertools::Itertools;
 use nom::character::complete;
 use std::collections::HashMap;
+
+use day3::GroupCollect;
 
 fn main() {
     let input = include_str!("../input.txt");
@@ -30,7 +31,7 @@ fn part2(input: &str) -> u32 {
     let grid = build_grid(input);
     let numbers = get_numbers(input);
 
-    let mut gear_nums = numbers
+    let gear_nums = numbers
         .into_iter()
         .flat_map(|(x, y, num)| {
             let check_pos = (y - 1..=y + 1)
@@ -39,14 +40,18 @@ fn part2(input: &str) -> u32 {
             let adj_gears = check_pos.filter(|(x, y)| matches!(grid.get(&(*x, *y)), Some('*')));
             adj_gears.map(move |gpos| (gpos, num))
         })
-        .into_group_map();
+        .group_collect::<Vec<_>,Vec<_>>();
 
-    // println!("gears: {:?}", gear_nums.map(|(gpos, g)| (gpos, g.collect::<Vec<_>>())).collect::<Vec<_>>());
+    // println!("gears_nums: {:?}", &gear_nums);
 
     gear_nums
         .into_iter()
         .filter(|(_, nums)| nums.len() == 2)
-        .map(|(_, nums)| nums.into_iter().map(|num| num.parse::<u32>().unwrap()).product::<u32>())
+        .map(|(_, nums)| {
+            nums.into_iter()
+                .map(|num| num.parse::<u32>().unwrap())
+                .product::<u32>()
+        })
         .sum()
 }
 
@@ -93,9 +98,11 @@ fn get_numbers(mut input: &str) -> Vec<(i32, i32, &str)> {
     }
     numbers
 }
+
 fn is_sym(c: &char) -> bool {
     !matches!(c, '0'..='9' | '\n' | '.')
 }
+
 
 #[cfg(test)]
 mod tests {
